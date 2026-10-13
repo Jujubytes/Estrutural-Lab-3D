@@ -68,6 +68,13 @@ export function setupViewportOverlay() {
   // Sincroniza estado inicial na UI
   eventBus.on(EVENTS.VIEW_OPTIONS_CHANGED, () => {
     if (cbDeformed) cbDeformed.checked = appState.showDeformed;
+    if (rangeScale) {
+      if (appState.deformScale > Number(rangeScale.max)) {
+        rangeScale.max = String(Math.max(appState.deformScale * 2, 5000));
+      }
+      rangeScale.value = String(appState.deformScale);
+    }
+    if (labelScale) labelScale.textContent = `${appState.deformScale}x`;
     diagButtons.forEach(b => {
       if (b.getAttribute('data-diag') === appState.activeDiagram) {
         b.classList.add('active');

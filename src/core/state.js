@@ -49,6 +49,23 @@ export class AppState {
     this.resultsManager.setResult(result);
     if (result && result.success) {
       this.showDeformed = true;
+
+      // Cálculo de escala visual proporcional e perceptível automaticamente
+      if (result.maxDisplacement > 1e-9) {
+        const nodes = this.model.getNodes();
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        nodes.forEach(n => {
+          if (n.x < minX) minX = n.x;
+          if (n.x > maxX) maxX = n.x;
+          if (n.y < minY) minY = n.y;
+          if (n.y > maxY) maxY = n.y;
+        });
+        const maxSpan = Math.max(maxX - minX, maxY - minY, 4);
+        const targetVisual = maxSpan * 0.08; // ~8% da dimensão da estrutura
+        let calcScale = Math.round(targetVisual / result.maxDisplacement);
+        if (calcScale > 50) calcScale = Math.round(calcScale / 10) * 10;
+        this.deformScale = Math.max(1, Math.min(10000, calcScale));
+      }
     }
     eventBus.emit(EVENTS.ANALYSIS_COMPLETED, result);
     eventBus.emit(EVENTS.VIEW_OPTIONS_CHANGED);
