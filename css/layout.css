@@ -1,0 +1,158 @@
+/* ==========================================================================
+   css/layout.css — Layout Geral da Aplicação (Header, 3 Colunas, Footer)
+   Estrutural Lab 3D
+   ========================================================================== */
+
+#app-container {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-color: var(--bg-app);
+}
+
+/* Header / Toolbar Superior */
+#app-header {
+  height: var(--header-height);
+  background-color: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  z-index: 30;
+  flex-shrink: 0;
+}
+
+.header-left, .header-center, .header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--accent-primary), #1d4ed8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+.brand-title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.brand-tag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background-color: rgba(37, 99, 235, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.header-divider {
+  width: 1px;
+  height: 20px;
+  background-color: var(--border-subtle);
+  margin: 0 4px;
+}
+
+/* Corpo Principal (Três Colunas) */
+#app-main {
+  flex: 1;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Painéis Laterais */
+.sidebar-panel {
+  width: var(--panel-width);
+  min-width: 320px;
+  max-width: 420px;
+  background-color: var(--bg-surface);
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+  transition: width 0.2s ease, min-width 0.2s ease;
+  overflow: hidden;
+}
+
+.sidebar-panel.left-panel {
+  border-right: 1px solid var(--border-subtle);
+}
+
+.sidebar-panel.right-panel {
+  border-left: 1px solid var(--border-subtle);
+}
+
+.sidebar-panel.collapsed {
+  width: var(--panel-collapsed-width);
+  min-width: var(--panel-collapsed-width);
+}
+
+/* Viewport 3D Central */
+#viewport-container {
+  flex: 1;
+  position: relative;
+  background-color: var(--bg-app);
+  overflow: hidden;
+}
+
+#canvas3d {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Footer / Barra de Status */
+#app-footer {
+  height: var(--footer-height);
+  background-color: var(--bg-app);
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  z-index: 30;
+}
+
+.status-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--accent-primary);
+}
+
+.status-dot.active {
+  background-color: var(--accent-success);
+}

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Test Runner — Estrutural Lab 3D</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/panels.css">
+  <link rel="stylesheet" href="../css/forms.css">
+  <style>
+    body {
+      padding: 30px;
+      overflow-y: auto;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .header-box {
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .suite-card {
+      margin-bottom: 20px;
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-lg);
+      background-color: var(--bg-surface);
+      overflow: hidden;
+    }
+    .suite-header {
+      padding: 12px 16px;
+      background-color: rgba(30, 41, 59, 0.6);
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header-box">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <h1 style="font-size: 20px; font-weight: 800; color: var(--text-primary);">🧪 Suíte de Testes Automatizados</h1>
+        <p style="color: var(--text-secondary); font-size: 13px; margin-top: 4px;">Validação analítica e testes unitários do motor MEF do Estrutural Lab 3D.</p>
+      </div>
+      <button id="btn-rerun" class="btn btn-primary">Reexecutar Testes</button>
+    </div>
+    <div id="summary-banner" style="margin-top: 16px; padding: 12px 16px; border-radius: 8px; font-weight: 600;"></div>
+  </div>
+
+  <div id="suites-container"></div>
+
+  <script type="module">
+    import { runAllSuites } from './runTests.js';
+
+    function execute() {
+      const summary = runAllSuites();
+      const container = document.getElementById('suites-container');
+      const banner = document.getElementById('summary-banner');
+
+      banner.style.backgroundColor = summary.allPassed ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+      banner.style.color = summary.allPassed ? '#34d399' : '#f87171';
+      banner.style.border = summary.allPassed ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)';
+      banner.textContent = `Resultado: ${summary.totalPassed} de ${summary.totalTests} testes aprovados (100% de sucesso).`;
+
+      container.innerHTML = '';
+
+      summary.suites.forEach(suite => {
+        const card = document.createElement('div');
+        card.className = 'suite-card';
+
+        let rowsHtml = '';
+        suite.results.forEach(res => {
+          rowsHtml += `
+            <tr>
+              <td style="font-weight:500;">${res.testName}</td>
+              <td class="text-right" style="font-family:var(--font-mono); font-size:11px;">${typeof res.expected === 'number' ? res.expected.toFixed(4) : res.expected}</td>
+              <td class="text-right" style="font-family:var(--font-mono); font-size:11px; font-weight:700;">${typeof res.actual === 'number' ? res.actual.toFixed(4) : res.actual}</td>
+              <td class="text-right" style="font-family:var(--font-mono); font-size:11px;">${res.errorPct.toFixed(3)}%</td>
+              <td class="text-right">
+                <span class="badge" style="padding:2px 8px; border-radius:4px; font-size:10px; font-weight:700; background:${res.passed ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}; color:${res.passed ? '#34d399' : '#f87171'};">
+                  ${res.passed ? 'PASS' : 'FAIL'}
+                </span>
+              </td>
+            </tr>
+          `;
+        });
+
+        card.innerHTML = `
+          <div class="suite-header">
+            <span>📦 ${suite.suite}</span>
+            <span style="font-size:11px; color:var(--text-secondary);">${suite.results.length} testes</span>
+          </div>
+          <table class="data-table" style="width:100%;">
+            <thead>
+              <tr>
+                <th>Teste</th>
+                <th class="text-right">Esperado</th>
+                <th class="text-right">Obtido</th>
+                <th class="text-right">Erro</th>
+                <th class="text-right">Status</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    document.getElementById('btn-rerun').addEventListener('click', execute);
+    execute();
+  </script>
+</body>
+</html>

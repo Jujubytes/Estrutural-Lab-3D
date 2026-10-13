@@ -3,925 +3,541 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Laboratório virtual interativo 3D para estudantes de Engenharia Civil. Visualize vigas e pórticos, explore apoios e entenda diagramas de esforços internos (N, V, M).">
-  <meta name="keywords" content="engenharia civil, estruturas, vigas, pórticos, diagrama de esforços, momento fletor, cortante, laboratório 3D">
-  <meta name="author" content="Estrutural Lab 3D">
+  <title>Estrutural Lab 3D — Análise Estrutural Interativa</title>
 
-  <!-- Open Graph / Social Media -->
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="Estrutural Lab 3D – Laboratório Virtual de Estruturas">
-  <meta property="og:description" content="Laboratório virtual interativo para estudantes de Engenharia Civil. Visualize vigas, pórticos e diagramas N, V, M em 3D.">
+  <!-- Tipografia Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <title>Estrutural Lab 3D</title>
+  <!-- Estilos Modulares Estruturais -->
+  <link rel="stylesheet" href="./css/main.css">
+  <link rel="stylesheet" href="./css/layout.css">
+  <link rel="stylesheet" href="./css/panels.css">
+  <link rel="stylesheet" href="./css/forms.css">
+  <link rel="stylesheet" href="./css/visualization.css">
 
-  <!-- Tailwind CSS via CDN (versão estável para produção) -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Babel para compilar React/JSX e TypeScript no navegador -->
-  <script src="https://unpkg.com/@babel/standalone@7.23.10/babel.min.js"></script>
-
-  <style>
-    body, html {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      width: 100%;
-      background-color: #0f172a;
-      color: white;
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      overflow: hidden;
-    }
-    #root { width: 100%; height: 100%; }
-    /* Garante que ícones SVG renderizem corretamente */
-    svg { display: inline-block; }
-
-    /* Tela de carregamento */
-    #loading-screen {
-      display: flex;
-      height: 100vh;
-      width: 100vw;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      background-color: #0f172a;
-      color: white;
-    }
-
-    /* Animação do spinner de carregamento */
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    .animate-spin {
-      animation: spin 1s linear infinite;
-    }
-  </style>
-
-  <!-- Mapa de Importação para Módulos ES (Permite usar 'import' no navegador) -->
-  <!-- Versões fixadas para garantir estabilidade e compatibilidade -->
+  <!-- Importmap para dependências ES Modules (Three.js e Addons) -->
   <script type="importmap">
-    {
-      "imports": {
-        "react": "https://esm.sh/react@18.2.0",
-        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-        "three": "https://esm.sh/three@0.160.0",
-        "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.15.12?external=react,react-dom,three",
-        "@react-three/drei": "https://esm.sh/@react-three/drei@9.96.1?external=react,react-dom,three,@react-three/fiber",
-        "lucide-react": "https://esm.sh/lucide-react@0.323.0?external=react"
-      }
+  {
+    "imports": {
+      "three": "https://esm.sh/three@0.160.0",
+      "three/addons/": "https://esm.sh/three@0.160.0/examples/jsm/"
     }
+  }
   </script>
 </head>
 <body>
-  <div id="root">
-    <!-- Tela de Carregamento Inicial -->
-    <div id="loading-screen">
-      <svg class="animate-spin" style="height:2.5rem;width:2.5rem;color:#3b82f6;margin-bottom:1rem;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle style="opacity:0.25;" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-        <path style="opacity:0.75;" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-      </svg>
-      <h2 style="font-family:sans-serif; font-weight:bold; font-size:1.25rem;">Carregando Laboratório 3D...</h2>
-      <p style="font-family:sans-serif; font-size:0.875rem; opacity:0.6; margin-top:8px;">Preparando motor gráfico. Isso pode levar alguns segundos.</p>
+
+  <div id="app-container">
+
+    <!-- =====================================================================
+         BARRA SUPERIOR (TOOLBAR)
+         ===================================================================== -->
+    <header id="app-header">
+      <div class="header-left">
+        <div class="brand-badge">E</div>
+        <div class="brand-title">
+          <span>Estrutural Lab 3D</span>
+          <span class="brand-tag">v2.0 MEF</span>
+        </div>
+
+        <div class="header-divider"></div>
+
+        <!-- Seletor 2D / 3D -->
+        <select id="select-dimension-mode" class="form-control" style="width: 110px; font-weight: 600;">
+          <option value="2D">2D Plano</option>
+          <option value="3D">3D Espacial</option>
+        </select>
+      </div>
+
+      <!-- Ações de Arquivo e Projeto -->
+      <div class="header-center">
+        <button id="btn-new-model" class="btn btn-secondary btn-sm" title="Criar novo modelo vazio">Novo</button>
+        <button id="btn-open-model" class="btn btn-secondary btn-sm" title="Abrir modelo salvo em JSON">Abrir</button>
+        <button id="btn-save-model" class="btn btn-secondary btn-sm" title="Exportar modelo para arquivo JSON">Salvar</button>
+        <button id="btn-clear-results" class="btn btn-secondary btn-sm" title="Limpar resultados da análise">Limpar</button>
+      </div>
+
+      <!-- Validação e Solução MEF -->
+      <div class="header-right">
+        <button id="btn-run-tests" class="btn btn-secondary btn-sm" title="Abrir testes de validação analítica teórica">
+          Testes Analíticos
+        </button>
+        <button id="btn-analyze-model" class="btn btn-success" title="Executar resolução estática linear por elementos finitos">
+          Analisar Estrutura
+        </button>
+      </div>
+    </header>
+
+    <!-- =====================================================================
+         CORPO PRINCIPAL (3 COLUNAS)
+         ===================================================================== -->
+    <main id="app-main">
+
+      <!-- 1. PAINEL ESQUERDO (MODELAGEM E ENTRADAS) -->
+      <aside id="left-panel" class="sidebar-panel left-panel">
+        <div class="panel-tab-bar">
+          <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="tab-templates">Templates</button>
+            <button class="tab-btn" data-tab="tab-geometry">Geometria</button>
+            <button class="tab-btn" data-tab="tab-loads">Cargas</button>
+            <button class="tab-btn" data-tab="tab-materials">Seções</button>
+          </nav>
+          <button id="btn-collapse-left" class="panel-collapse-btn" title="Recolher painel">&laquo;</button>
+        </div>
+
+        <!-- Faixa quando recolhido -->
+        <div class="collapsed-strip">
+          <button id="btn-expand-left" class="panel-collapse-btn" title="Expandir painel">&raquo;</button>
+          <div class="vertical-title">Modelagem</div>
+        </div>
+
+        <!-- Conteúdo das Abas da Esquerda -->
+        <div class="panel-content">
+
+          <!-- ABA 1: TEMPLATES PARAMÉTRICOS -->
+          <div id="tab-templates" class="tab-pane active">
+            <div class="panel-card">
+              <div class="panel-card-header">
+                <span class="panel-card-title">Templates Estruturais</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Tipo de Estrutura:</label>
+                <select id="select-template" class="form-control">
+                  <option value="simply-supported">Viga Biapoiada (8m, Carga Central)</option>
+                  <option value="cantilever">Viga em Balanço (4m, Carga na Ponta)</option>
+                  <option value="continuous">Viga Contínua (3 Vãos com Carga Distribuída)</option>
+                  <option value="frame-simple">Pórtico Simples (Vento + Gravidade)</option>
+                  <option value="frame-multibay">Pórtico Multivãos (2 Vãos, 1 Pavimento)</option>
+                  <option value="building">Edifício Reticulado (2 Vãos, 3 Pavimentos)</option>
+                </select>
+              </div>
+
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label class="form-label">Vão L (m):</label>
+                  <input type="number" id="tmpl-span" class="form-control" value="8" step="0.5" min="1">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Altura H (m):</label>
+                  <input type="number" id="tmpl-height" class="form-control" value="4" step="0.5" min="1">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Carga Principal P/q (kN ou kN/m):</label>
+                <input type="number" id="tmpl-load" class="form-control" value="100" step="10">
+              </div>
+
+              <button id="btn-apply-template" class="btn btn-primary btn-block">Gerar Estrutura</button>
+            </div>
+          </div>
+
+          <!-- ABA 2: GEOMETRIA (NÓS, BARRAS E APOIOS) -->
+          <div id="tab-geometry" class="tab-pane">
+
+            <!-- Card: Nós -->
+            <div class="panel-card">
+              <div class="panel-card-header">
+                <span class="panel-card-title">Nós da Estrutura</span>
+                <span id="badge-node-count" class="panel-card-badge">0</span>
+              </div>
+              <div class="form-grid-4">
+                <input type="text" id="input-node-id" class="form-control" placeholder="ID" value="n3">
+                <input type="number" id="input-node-x" class="form-control" placeholder="X" value="0" step="0.5">
+                <input type="number" id="input-node-y" class="form-control" placeholder="Y" value="0" step="0.5">
+                <input type="number" id="input-node-z" class="form-control" placeholder="Z" value="0" step="0.5">
+              </div>
+              <button id="btn-add-node" class="btn btn-secondary btn-sm btn-block">Adicionar Nó</button>
+              <div id="list-nodes" class="item-list"></div>
+            </div>
+
+            <!-- Card: Barras (Elementos) -->
+            <div class="panel-card">
+              <div class="panel-card-header">
+                <span class="panel-card-title">Elementos de Barra</span>
+                <span id="badge-elem-count" class="panel-card-badge">0</span>
+              </div>
+              <div class="form-grid-3">
+                <input type="text" id="input-elem-id" class="form-control" placeholder="ID" value="e2">
+                <select id="select-elem-n1" class="form-control"></select>
+                <select id="select-elem-n2" class="form-control"></select>
+              </div>
+              <div class="form-grid-2">
+                <select id="select-elem-mat" class="form-control"></select>
+                <select id="select-elem-sec" class="form-control"></select>
+              </div>
+              <button id="btn-add-element" class="btn btn-secondary btn-sm btn-block">Criar Barra</button>
+              <div id="list-elements" class="item-list"></div>
+            </div>
+
+            <!-- Card: Condições de Apoio -->
+            <div class="panel-card">
+              <div class="panel-card-header">
+                <span class="panel-card-title">Vínculos e Apoios</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Selecionar Nó:</label>
+                <select id="select-support-node" class="form-control"></select>
+              </div>
+              <div class="form-grid-3">
+                <button id="btn-sup-pinned" class="btn btn-secondary btn-sm" style="color:#34d399;">Articulado</button>
+                <button id="btn-sup-roller" class="btn btn-secondary btn-sm" style="color:#60a5fa;">Móvel</button>
+                <button id="btn-sup-fixed" class="btn btn-secondary btn-sm" style="color:#fbbf24;">Engaste</button>
+              </div>
+              <div class="dof-grid">
+                <div class="dof-item"><input type="checkbox" id="cb-sup-ux"><span>Ux</span></div>
+                <div class="dof-item"><input type="checkbox" id="cb-sup-uy"><span>Uy</span></div>
+                <div class="dof-item"><input type="checkbox" id="cb-sup-uz"><span>Uz</span></div>
+                <div class="dof-item"><input type="checkbox" id="cb-sup-rx"><span>Rx</span></div>
+                <div class="dof-item"><input type="checkbox" id="cb-sup-ry"><span>Ry</span></div>
+                <div class="dof-item"><input type="checkbox" id="cb-sup-rz"><span>Rz</span></div>
+              </div>
+              <button id="btn-sup-remove" class="btn btn-danger btn-sm btn-block">Remover Apoio do Nó</button>
+            </div>
+
+          </div>
+
+          <!-- ABA 3: CARGAS -->
+          <div id="tab-loads" class="tab-pane">
+            <!-- Carga Concentrada / Momento -->
+            <div class="panel-card">
+              <div class="panel-card-header">
+                <span class="panel-card-title">Carga Concentrada Nodal</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Nó de Aplicação:</label>
+                <select id="select-load-node" class="form-control"></select>
+              </div>
+              <div class="form-grid-3">
+                <div class="form-group"><label class="form-label">Fx (kN):</label><input type="number" id="input-load-fx" class="form-control" value="0" step="5"></div>
+                <div class="form-group"><label class="form-label">Fy (kN):</label><input type="number" id="input-load-fy" class="form-control" value="-50" step="5"></div>
+                <div class="form-group"><label class="form-label">Fz (kN):</label><input type="number" id="input-load-fz" class="form-control" value="0" step="5"></div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Momento Mz (kNm):</label>
+                <input type="number" id="input-load-mz" class="form-control" value="0" step="5">
+              </div>
+              <button id="btn-add-point-load" class="btn btn-secondary btn-sm btn-block">Aplicar Força Concentrada</button>
+            </div>
+
+            <!-- Carga Distribuída -->
+            <div class="panel-card">
+              <div class="panel-card-header">
+                <span class="panel-card-title">Carga Distribuída em Barra</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Barra:</label>
+                <select id="select-load-elem" class="form-control"></select>
+              </div>
+              <div class="form-grid-3">
+                <div class="form-group">
+                  <label class="form-label">Direção:</label>
+                  <select id="select-load-dist-dir" class="form-control">
+                    <option value="y">Vertical (Y)</option>
+                    <option value="x">Axial (X)</option>
+                    <option value="z">Transversal (Z)</option>
+                  </select>
+                </div>
+                <div class="form-group"><label class="form-label">q0 (kN/m):</label><input type="number" id="input-load-q0" class="form-control" value="-20" step="5"></div>
+                <div class="form-group"><label class="form-label">q1 (kN/m):</label><input type="number" id="input-load-q1" class="form-control" value="-20" step="5"></div>
+              </div>
+              <button id="btn-add-dist-load" class="btn btn-secondary btn-sm btn-block">Aplicar Carga Distribuída</button>
+            </div>
+
+            <!-- Lista de Cargas Ativas -->
+            <div class="panel-card">
+              <div class="panel-card-header">
+                <span class="panel-card-title">Cargas Ativas</span>
+                <span id="badge-load-count" class="panel-card-badge">0</span>
+              </div>
+              <div id="list-loads" class="item-list"></div>
+            </div>
+          </div>
+
+          <!-- ABA 4: SEÇÕES E MATERIAIS -->
+          <div id="tab-materials" class="tab-pane">
+            <div class="panel-card">
+              <div class="panel-card-header">
+                <span class="panel-card-title">Calculadora de Seção Retangular</span>
+              </div>
+              <div class="form-grid-2">
+                <div class="form-group"><label class="form-label">Largura b (cm):</label><input type="number" id="input-sec-b" class="form-control" value="20" min="1" step="1"></div>
+                <div class="form-group"><label class="form-label">Altura h (cm):</label><input type="number" id="input-sec-h" class="form-control" value="40" min="1" step="1"></div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Nome da Seção:</label>
+                <input type="text" id="input-sec-name" class="form-control" value="Viga 20x40 cm">
+              </div>
+
+              <!-- Pré-visualização de Propriedades Geométricas -->
+              <div style="background-color:rgba(9,13,22,0.6); padding:8px; border-radius:4px; font-size:11px; display:flex; flex-direction:column; gap:4px; font-family:var(--font-mono);">
+                <div style="display:flex; justify-content:space-between;"><span style="color:var(--text-muted);">Área (A):</span><span id="sec-preview-area" class="accent-val">0.080 m²</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:var(--text-muted);">Inércia Iz:</span><span id="sec-preview-iz" class="moment-val">0.001067 m⁴</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:var(--text-muted);">Inércia Iy:</span><span id="sec-preview-iy">0.000267 m⁴</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:var(--text-muted);">Torção J:</span><span id="sec-preview-j">0.000850 m⁴</span></div>
+              </div>
+
+              <button id="btn-create-section" class="btn btn-secondary btn-sm btn-block">Cadastrar Nova Seção</button>
+            </div>
+          </div>
+
+        </div>
+      </aside>
+
+      <!-- 2. VIEWPORT 3D CENTRAL -->
+      <section id="viewport-container">
+        <canvas id="canvas3d"></canvas>
+
+        <!-- Barra Superior Flutuante do Viewport (Deformada, Diagramas e Câmera) -->
+        <div class="viewport-overlay viewport-overlay-top">
+          <div class="overlay-pill-group">
+            <label class="checkbox-label" style="font-size:11px; font-weight:600;">
+              <input type="checkbox" id="cb-show-deformed">
+              <span>Deformada</span>
+            </label>
+            <input type="range" id="range-deform-scale" class="range-slider" min="1" max="1000" value="100" style="width: 70px;">
+            <span id="label-deform-scale" style="font-size:10px; font-family:var(--font-mono); color:var(--text-secondary); width:35px;">100x</span>
+          </div>
+
+          <!-- Seletor de Diagramas N, V, M -->
+          <div class="overlay-pill-group">
+            <button class="overlay-btn active" data-diag="none">Nenhum</button>
+            <button class="overlay-btn btn-diag-n" data-diag="N">Normal (N)</button>
+            <button class="overlay-btn btn-diag-v" data-diag="V">Cortante (V)</button>
+            <button class="overlay-btn btn-diag-m" data-diag="M">Momento (M)</button>
+          </div>
+
+          <!-- Presets de Câmera -->
+          <div class="overlay-pill-group">
+            <button id="btn-cam-2d" class="overlay-btn" title="Vista frontal no plano XY">2D Frontal</button>
+            <button id="btn-cam-3d" class="overlay-btn" title="Perspectiva isométrica 3D">3D Iso</button>
+            <button id="btn-cam-reset" class="overlay-btn" title="Resetar enquadramento da câmera">Reset</button>
+          </div>
+        </div>
+
+        <!-- Barra Inferior Flutuante (Camadas) -->
+        <div class="viewport-overlay viewport-overlay-bottom">
+          <div class="overlay-pill-group">
+            <label class="checkbox-label"><input type="checkbox" id="cb-layer-nodes" checked><span>Nós</span></label>
+            <label class="checkbox-label"><input type="checkbox" id="cb-layer-labels" checked><span>Rótulos</span></label>
+            <label class="checkbox-label"><input type="checkbox" id="cb-layer-supports" checked><span>Apoios</span></label>
+            <label class="checkbox-label"><input type="checkbox" id="cb-layer-loads" checked><span>Cargas</span></label>
+            <label class="checkbox-label"><input type="checkbox" id="cb-layer-grid" checked><span>Grid</span></label>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. PAINEL DIREITO (RESULTADOS E INSPEÇÃO MEF) -->
+      <aside id="right-panel" class="sidebar-panel right-panel">
+        <div class="panel-tab-bar">
+          <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="tab-summary">Resumo</button>
+            <button class="tab-btn" data-tab="tab-displacements">Deslocamentos</button>
+            <button class="tab-btn" data-tab="tab-reactions">Reações</button>
+            <button class="tab-btn" data-tab="tab-forces">Esforços</button>
+          </nav>
+          <button id="btn-collapse-right" class="panel-collapse-btn" title="Recolher painel">&raquo;</button>
+        </div>
+
+        <!-- Faixa quando recolhido -->
+        <div class="collapsed-strip">
+          <button id="btn-expand-right" class="panel-collapse-btn" title="Expandir painel">&laquo;</button>
+          <div class="vertical-title">Resultados</div>
+        </div>
+
+        <div class="panel-content">
+
+          <!-- ABA 1: RESUMO GLOBAL E EQUILÍBRIO -->
+          <div id="tab-summary" class="tab-pane active">
+            <div class="panel-card">
+              <div class="panel-card-header">
+                <span class="panel-card-title">Status da Análise MEF</span>
+                <span id="res-status-badge" class="panel-card-badge">Não Analisado</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 0;">
+                <span style="color:var(--text-secondary);">Flecha Máxima (δmax):</span>
+                <span id="res-max-displacement" class="accent-val" style="font-size:14px;">—</span>
+              </div>
+            </div>
+
+            <!-- Equilíbrio Estático Global -->
+            <div class="panel-card">
+              <div class="panel-card-header">
+                <span class="panel-card-title">Equilíbrio Estático Global</span>
+                <span id="eq-status-badge" class="panel-card-badge">—</span>
+              </div>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr><th>Eixo</th><th class="text-right">Σ Cargas</th><th class="text-right">Σ Reações</th><th class="text-right">Resíduo</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>X</td><td id="eq-fext-x" class="text-right">—</td><td id="eq-rx" class="text-right">—</td><td id="eq-diff-x" class="text-right accent-val">—</td></tr>
+                    <tr><td>Y</td><td id="eq-fext-y" class="text-right">—</td><td id="eq-ry" class="text-right">—</td><td id="eq-diff-y" class="text-right accent-val">—</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- ABA 2: DESLOCAMENTOS NODAIS -->
+          <div id="tab-displacements" class="tab-pane">
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr><th>Nó</th><th class="text-right">Ux (mm)</th><th class="text-right">Uy (mm)</th><th class="text-right">Rz (mrad)</th></tr>
+                </thead>
+                <tbody id="tbody-displacements">
+                  <tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Execute a análise para visualizar.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ABA 3: REAÇÕES DE APOIO -->
+          <div id="tab-reactions" class="tab-pane">
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr><th>Apoio</th><th class="text-right">Rx (kN)</th><th class="text-right">Ry (kN)</th><th class="text-right">Mz (kNm)</th></tr>
+                </thead>
+                <tbody id="tbody-reactions">
+                  <tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Execute a análise para visualizar.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ABA 4: ESFORÇOS INTERNOS EM BARRAS -->
+          <div id="tab-forces" class="tab-pane">
+            <div class="form-group">
+              <label class="form-label">Selecionar Barra para Inspeção:</label>
+              <select id="select-results-element" class="form-control"></select>
+            </div>
+
+            <!-- Cards de Pico -->
+            <div class="form-grid-3">
+              <div class="panel-card" style="padding:8px; text-align:center;">
+                <span style="font-size:10px; color:var(--diagram-n); font-weight:700;">|N| Máx</span>
+                <span id="card-force-n" style="font-size:12px; font-weight:700; font-family:var(--font-mono);">—</span>
+              </div>
+              <div class="panel-card" style="padding:8px; text-align:center;">
+                <span style="font-size:10px; color:var(--diagram-v); font-weight:700;">|V| Máx</span>
+                <span id="card-force-v" style="font-size:12px; font-weight:700; font-family:var(--font-mono);">—</span>
+              </div>
+              <div class="panel-card" style="padding:8px; text-align:center;">
+                <span style="font-size:10px; color:var(--diagram-m); font-weight:700;">|M| Máx</span>
+                <span id="card-force-m" style="font-size:12px; font-weight:700; font-family:var(--font-mono);">—</span>
+              </div>
+            </div>
+
+            <!-- Tabela Discretizada ao Longo de X -->
+            <div class="table-container" style="max-height: 280px; overflow-y:auto;">
+              <table class="data-table">
+                <thead>
+                  <tr><th>x (m)</th><th class="text-right">N (kN)</th><th class="text-right">V (kN)</th><th class="text-right">M (kNm)</th></tr>
+                </thead>
+                <tbody id="tbody-element-forces">
+                  <tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Selecione uma barra.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </aside>
+
+    </main>
+
+    <!-- =====================================================================
+         RODAPÉ / BARRA DE STATUS
+         ===================================================================== -->
+    <footer id="app-footer">
+      <div class="status-group">
+        <div class="status-item"><span class="status-dot active"></span><span>Modo: <strong id="status-dimension">2D</strong></span></div>
+        <div class="status-item"><span>Nós: <strong id="status-nodes-count">0</strong></span></div>
+        <div class="status-item"><span>Barras: <strong id="status-elements-count">0</strong></span></div>
+        <div class="status-item"><span>Apoios: <strong id="status-supports-count">0</strong></span></div>
+        <div class="status-item"><span>Cargas: <strong id="status-loads-count">0</strong></span></div>
+      </div>
+
+      <div class="status-group">
+        <div class="status-item"><span id="status-analysis-dot" class="status-dot"></span><span id="status-analysis-state">Inicializando</span></div>
+        <div class="status-item" style="color:var(--text-dim); font-size:10px;">Girar: Botão Esquerdo | Pan: Botão Direito | Zoom: Scroll</div>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- =====================================================================
+       MODAIS E OVERLAYS
+       ===================================================================== -->
+
+  <!-- Modal de Validação Teórica (Benchmarks) -->
+  <div id="modal-tests" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>🔬</span>
+          <span>Benchmarks de Validação Analítica Teórica</span>
+        </div>
+        <button id="btn-close-tests" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="color:var(--text-secondary); font-size:12px;">
+          Comparativo direto das soluções numéricas do motor MEF com soluções analíticas fechadas da Resistência dos Materiais e Teoria das Estruturas.
+        </p>
+
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Caso / Grandeza</th>
+                <th>Fórmula Analítica</th>
+                <th class="text-right">Teórico</th>
+                <th class="text-right">MEF Numérico</th>
+                <th class="text-right">Erro</th>
+                <th class="text-right">Status</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-benchmarks"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-run-all-benchmarks" class="btn btn-primary btn-sm">Reexecutar Benchmarks</button>
+      </div>
     </div>
   </div>
 
-  <!-- Script Principal da Aplicação -->
-  <script type="text/babel" data-type="module" data-presets="typescript,react">
-    import React, { useState, useEffect, useMemo, useRef } from 'react';
-    import { createRoot } from 'react-dom/client';
-    import { Canvas, useFrame, useThree } from '@react-three/fiber';
-    import {
-      OrbitControls,
-      Line,
-      Text,
-      Html,
-      Environment,
-      Grid,
-      ContactShadows
-    } from '@react-three/drei';
-    import * as THREE from 'three';
-    import {
-      Activity,
-      BookOpen,
-      BoxSelect,
-      CheckCircle2,
-      ChevronRight,
-      Info,
-      Layers,
-      MousePointer2,
-      Play,
-      Rotate3D,
-      Ruler,
-      Settings2,
-      GraduationCap
-    } from 'lucide-react';
+  <!-- Modal de Confirmação de Novo Modelo -->
+  <div id="modal-new-confirm" class="modal-backdrop">
+    <div class="modal-dialog" style="max-width: 420px;">
+      <div class="modal-header">
+        <div class="modal-title">Iniciar Novo Modelo</div>
+      </div>
+      <div class="modal-body">
+        <p style="color:var(--text-secondary); font-size:12px;">
+          Deseja realmente iniciar um novo modelo limpo? Todas as alterações não exportadas serão perdidas.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-cancel-new" class="btn btn-secondary btn-sm">Cancelar</button>
+        <button id="btn-confirm-new" class="btn btn-danger btn-sm">Confirmar e Limpar</button>
+      </div>
+    </div>
+  </div>
 
-    type SupportType = 'pinned' | 'roller' | 'fixed' | 'none';
-    type DiagramType = 'none' | 'N' | 'V' | 'M';
+  <!-- Input oculto para importação de JSON -->
+  <input type="file" id="input-file-model" accept=".json" style="display:none;">
 
-    interface Node {
-      id: string;
-      x: number;
-      y: number;
-      z: number;
-    }
+  <!-- Contêiner Flutuante de Toasts -->
+  <div id="toast-container"></div>
 
-    interface Element {
-      id: string;
-      n1: string;
-      n2: string;
-    }
+  <!-- Ponto de Entrada JavaScript Modular (ES Module) -->
+  <script type="module" src="./src/main.js"></script>
 
-    interface SupportCondition {
-      nodeId: string;
-      type: SupportType;
-      angle?: number;
-    }
-
-    interface Load {
-      id: string;
-      nodeId?: string;
-      elementId?: string;
-      type: 'point' | 'distributed' | 'moment';
-      dir: [number, number, number];
-      val: number;
-      posOffset?: number;
-      label: string;
-    }
-
-    interface DiagramData {
-      axis: [number, number, number][];
-      values: number[];
-    }
-
-    interface StructuralModel {
-      id: string;
-      title: string;
-      type: 'beam' | 'frame';
-      description: string;
-      nodes: Node[];
-      elements: Element[];
-      supports: SupportCondition[];
-      loads: Load[];
-      diagrams: {
-        N: Record<string, DiagramData>;
-        V: Record<string, DiagramData>;
-        M: Record<string, DiagramData>;
-      };
-      learningSteps: { title: string; text: string; targetId?: string }[];
-    }
-
-    // Catálogo de Modelos Didáticos Pré-calculados
-    const MODELS: Record<string, StructuralModel> = {
-      'beam-simply-supported': {
-        id: 'beam-simply-supported',
-        title: 'Viga Biapoiada Simples',
-        type: 'beam',
-        description: 'O modelo mais clássico: uma viga isostática com um apoio do 2º gênero e um do 1º gênero.',
-        nodes: [
-          { id: 'n1', x: -4, y: 0, z: 0 },
-          { id: 'n2', x: 0, y: 0, z: 0 },
-          { id: 'n3', x: 4, y: 0, z: 0 }
-        ],
-        elements: [
-          { id: 'e1', n1: 'n1', n2: 'n2' },
-          { id: 'e2', n1: 'n2', n2: 'n3' }
-        ],
-        supports: [
-          { nodeId: 'n1', type: 'pinned' },
-          { nodeId: 'n3', type: 'roller' }
-        ],
-        loads: [
-          { id: 'l1', nodeId: 'n2', type: 'point', dir: [0, -1, 0], val: 10, label: '10 kN' }
-        ],
-        diagrams: {
-          N: {},
-          V: {
-            'e1': { axis: [[-4,0,0], [0,0,0]], values: [5, 5] },
-            'e2': { axis: [[0,0,0], [4,0,0]], values: [-5, -5] }
-          },
-          M: {
-            'e1': { axis: [[-4,0,0], [0,0,0]], values: [0, -20] },
-            'e2': { axis: [[0,0,0], [4,0,0]], values: [-20, 0] }
-          }
-        },
-        learningSteps: [
-          { title: 'A Estrutura', text: 'Esta é uma viga biapoiada de 8 metros com uma carga concentrada bem no meio.' },
-          { title: 'Apoio Articulado (Nó Esquerdo)', text: 'Restringe movimentos em X e Y, mas permite que a viga rotacione. Fornece duas reações (Vertical e Horizontal).', targetId: 'sup-n1' },
-          { title: 'Apoio Móvel (Nó Direito)', text: 'Restringe apenas o movimento vertical (Y). Permite translação horizontal e rotação. Fornece apenas reação Vertical.', targetId: 'sup-n3' },
-          { title: 'Carga Aplicada', text: 'Uma força de 10 kN atua no centro, empurrando a viga para baixo.', targetId: 'load-l1' },
-          { title: 'Esforço Cortante (V)', text: 'Metade da carga vai para cada apoio (5 kN). O cortante é constante e positivo (+5) até o meio, onde a carga atua e o faz cair para (-5).' },
-          { title: 'Momento Fletor (M)', text: 'O momento é máximo no meio da viga, sob a carga (20 kNm). A viga "sorri" (tração embaixo), logo o momento é positivo e desenhado para baixo na nossa convenção.' }
-        ]
-      },
-      'beam-cantilever': {
-        id: 'beam-cantilever',
-        title: 'Viga em Balanço',
-        type: 'beam',
-        description: 'Viga engastada em uma extremidade e livre na outra.',
-        nodes: [
-          { id: 'n1', x: -3, y: 0, z: 0 },
-          { id: 'n2', x: 3, y: 0, z: 0 }
-        ],
-        elements: [
-          { id: 'e1', n1: 'n1', n2: 'n2' }
-        ],
-        supports: [
-          { nodeId: 'n1', type: 'fixed' }
-        ],
-        loads: [
-          { id: 'l1', nodeId: 'n2', type: 'point', dir: [0, -1, 0], val: 15, label: '15 kN' }
-        ],
-        diagrams: {
-          N: {},
-          V: {
-            'e1': { axis: [[-3,0,0], [3,0,0]], values: [15, 15] }
-          },
-          M: {
-            'e1': { axis: [[-3,0,0], [3,0,0]], values: [90, 0] }
-          }
-        },
-        learningSteps: [
-          { title: 'Engaste', text: 'O engaste (nó esquerdo) bloqueia todos os movimentos: X, Y e Rotação. Ele deve absorver todo o impacto da carga.', targetId: 'sup-n1' },
-          { title: 'Momento Fletor', text: 'Como a carga empurra a ponta para baixo, a viga "chora" (tração em cima). O momento é negativo e máximo no engaste, diminuindo até zero na ponta livre.' }
-        ]
-      },
-      'frame-simple': {
-        id: 'frame-simple',
-        title: 'Pórtico Simples',
-        type: 'frame',
-        description: 'Pórtico plano com bases articuladas sujeito a força horizontal (vento).',
-        nodes: [
-          { id: 'n1', x: -3, y: -4, z: 0 },
-          { id: 'n2', x: 3, y: -4, z: 0 },
-          { id: 'n3', x: -3, y: 2, z: 0 },
-          { id: 'n4', x: 3, y: 2, z: 0 }
-        ],
-        elements: [
-          { id: 'p1', n1: 'n1', n2: 'n3' },
-          { id: 'p2', n1: 'n2', n2: 'n4' },
-          { id: 'v1', n1: 'n3', n2: 'n4' }
-        ],
-        supports: [
-          { nodeId: 'n1', type: 'pinned' },
-          { nodeId: 'n2', type: 'pinned' }
-        ],
-        loads: [
-          { id: 'l1', nodeId: 'n3', type: 'point', dir: [1, 0, 0], val: 12, label: '12 kN (Vento)' }
-        ],
-        diagrams: {
-          N: {
-            'p1': { axis: [[-3,-4,0], [-3,2,0]], values: [-6, -6] },
-            'p2': { axis: [[3,-4,0], [3,2,0]], values: [6, 6] },
-            'v1': { axis: [[-3,2,0], [3,2,0]], values: [6, 6] }
-          },
-          V: {
-            'p1': { axis: [[-3,-4,0], [-3,2,0]], values: [6, 6] },
-            'p2': { axis: [[3,-4,0], [3,2,0]], values: [6, 6] },
-            'v1': { axis: [[-3,2,0], [3,2,0]], values: [-6, -6] }
-          },
-          M: {
-            'p1': { axis: [[-3,-4,0], [-3,2,0]], values: [0, 36] },
-            'p2': { axis: [[3,-4,0], [3,2,0]], values: [0, 36] },
-            'v1': { axis: [[-3,2,0], [3,2,0]], values: [36, -36] }
-          }
-        },
-        learningSteps: [
-          { title: 'Força Lateral', text: 'A força de 12 kN no topo simula vento ou impacto lateral.', targetId: 'load-l1' },
-          { title: 'Apoios Articulados', text: 'Como as bases não são engastadas, elas não resistem a momento, apenas a forças X e Y. O momento fletor na base será zero.' },
-          { title: 'Esforço Normal (N)', text: 'O vento tenta "tombar" o pórtico. O pilar esquerdo é tracionado e o direito é comprimido para manter o equilíbrio.' }
-        ]
-      }
-    };
-
-    const COLORS = {
-      beam: '#94a3b8',
-      node: '#334155',
-      supportPinned: '#10b981',
-      supportRoller: '#3b82f6',
-      supportFixed: '#f59e0b',
-      load: '#ef4444',
-      diagramN: '#3b82f6',
-      diagramV: '#10b981',
-      diagramM: '#f59e0b',
-    };
-
-    const INFO_DIC = {
-      'pinned': { name: 'Apoio Articulado (2º Gênero)', desc: 'Impede translação em X e Y. Permite rotação.', rx: 'Sim', ry: 'Sim', rm: 'Não' },
-      'roller': { name: 'Apoio Móvel (1º Gênero)', desc: 'Impede translação perpendicular ao apoio (geralmente Y). Permite movimento rasante e rotação.', rx: 'Não', ry: 'Sim', rm: 'Não' },
-      'fixed': { name: 'Engaste (3º Gênero)', desc: 'Impede todas as translações (X, Y) e também impede a rotação.', rx: 'Sim', ry: 'Sim', rm: 'Sim' }
-    };
-
-    const LoadArrow = ({ start, dir, label, id, onSelect }) => {
-      const arrowLength = 1.5;
-      const direction = new THREE.Vector3(...dir).normalize();
-      const position = new THREE.Vector3(
-        start[0] - direction.x * arrowLength,
-        start[1] - direction.y * arrowLength,
-        start[2] - direction.z * arrowLength
-      );
-
-      const quaternion = new THREE.Quaternion().setFromUnitVectors(
-        new THREE.Vector3(0, -1, 0),
-        direction
-      );
-
-      return (
-        <group position={position} quaternion={quaternion} onClick={(e) => { e.stopPropagation(); onSelect(`load-${id}`); }}>
-          <mesh position={[0, arrowLength / 2, 0]}>
-            <cylinderGeometry args={[0.05, 0.05, arrowLength, 12]} />
-            <meshStandardMaterial color={COLORS.load} />
-          </mesh>
-          <mesh position={[0, 0, 0]}>
-            <coneGeometry args={[0.2, 0.4, 16]} />
-            <meshStandardMaterial color={COLORS.load} />
-          </mesh>
-          <Text
-            position={[0.5, arrowLength / 2, 0]}
-            color={COLORS.load}
-            fontSize={0.4}
-            anchorX="left"
-            anchorY="middle"
-            outlineWidth={0.02}
-            outlineColor="#ffffff"
-          >
-            {label}
-          </Text>
-        </group>
-      );
-    };
-
-    const SupportMesh = ({ type, position, angle = 0, id, onSelect }) => {
-      const rotZ = (angle * Math.PI) / 180;
-      if (type === 'none') return null;
-
-      return (
-        <group position={new THREE.Vector3(...position)} rotation={[0, 0, rotZ]} onClick={(e) => { e.stopPropagation(); onSelect(`sup-${id}`); }}>
-          {type === 'pinned' && (
-            <group position={[0, -0.4, 0]}>
-              <mesh position={[0, 0.2, 0]}>
-                <coneGeometry args={[0.3, 0.4, 4]} />
-                <meshStandardMaterial color={COLORS.supportPinned} />
-              </mesh>
-              <mesh position={[0, 0, 0]}>
-                <boxGeometry args={[0.8, 0.1, 0.5]} />
-                <meshStandardMaterial color={COLORS.supportPinned} />
-              </mesh>
-            </group>
-          )}
-
-          {type === 'roller' && (
-            <group position={[0, -0.5, 0]}>
-              <mesh position={[0, 0.3, 0]}>
-                <coneGeometry args={[0.3, 0.4, 4]} />
-                <meshStandardMaterial color={COLORS.supportRoller} roughness={0.7} />
-              </mesh>
-              <mesh position={[-0.2, 0.05, 0]} rotation={[Math.PI/2, 0, 0]}>
-                <cylinderGeometry args={[0.08, 0.08, 0.5, 16]} />
-                <meshStandardMaterial color={COLORS.supportRoller} />
-              </mesh>
-              <mesh position={[0.2, 0.05, 0]} rotation={[Math.PI/2, 0, 0]}>
-                <cylinderGeometry args={[0.08, 0.08, 0.5, 16]} />
-                <meshStandardMaterial color={COLORS.supportRoller} />
-              </mesh>
-              <mesh position={[0, -0.05, 0]}>
-                <boxGeometry args={[0.8, 0.05, 0.5]} />
-                <meshStandardMaterial color={COLORS.supportRoller} />
-              </mesh>
-            </group>
-          )}
-
-          {type === 'fixed' && (
-            <group position={[-0.2, 0, 0]}>
-               <mesh position={[0, 0, 0]}>
-                <boxGeometry args={[0.4, 1.2, 0.6]} />
-                <meshStandardMaterial color={COLORS.supportFixed} />
-              </mesh>
-              <mesh position={[-0.22, 0, 0]}>
-                <boxGeometry args={[0.05, 1.4, 0.7]} />
-                <meshStandardMaterial color="#475569" />
-              </mesh>
-            </group>
-          )}
-        </group>
-      );
-    };
-
-    const Diagram3D = ({ data, type, scaleMultiplier = 0.05 }) => {
-      if (!data || data.axis.length < 2) return null;
-
-      let color = COLORS.diagramV;
-      if (type === 'N') color = COLORS.diagramN;
-      if (type === 'M') color = COLORS.diagramM;
-
-      const points = [];
-      const hatchLines = [];
-
-      const pStart = new THREE.Vector3(...data.axis[0]);
-      const pEnd = new THREE.Vector3(...data.axis[data.axis.length - 1]);
-
-      const dir = pEnd.clone().sub(pStart).normalize();
-      const normal = new THREE.Vector3(-dir.y, dir.x, 0);
-
-      const maxVal = Math.max(...data.values.map(v => Math.abs(v)));
-      const dynamicScale = maxVal > 0 ? (1.5 / maxVal) : 1;
-      const scaledValues = data.values.map(v => v * dynamicScale);
-
-      points.push(new THREE.Vector3(...data.axis[0]));
-
-      for (let i = 0; i < data.axis.length; i++) {
-        const baseP = new THREE.Vector3(...data.axis[i]);
-        const val = scaledValues[i];
-
-        const diagP = baseP.clone().add(normal.clone().multiplyScalar(val));
-        points.push(diagP);
-
-        if (i > 0) {
-          const prevBase = new THREE.Vector3(...data.axis[i-1]);
-          const prevVal = scaledValues[i-1];
-          const segments = 10;
-          for (let j = 1; j <= segments; j++) {
-            const t = j / segments;
-            const interpBase = prevBase.clone().lerp(baseP, t);
-            const interpVal = prevVal + (val - prevVal) * t;
-            const interpDiag = interpBase.clone().add(normal.clone().multiplyScalar(interpVal));
-            hatchLines.push([interpBase, interpDiag]);
-          }
-        }
-      }
-
-      points.push(new THREE.Vector3(...data.axis[data.axis.length - 1]));
-      points.push(new THREE.Vector3(...data.axis[0]));
-
-      return (
-        <group>
-          <Line points={points} color={color} lineWidth={2} />
-
-          {hatchLines.map((linePts, idx) => (
-            <Line key={idx} points={linePts} color={color} lineWidth={1} opacity={0.3} transparent />
-          ))}
-
-          {data.axis.map((pos, idx) => {
-            if (idx === 0 || idx === data.axis.length - 1 || data.values[idx] !== data.values[idx-1]) {
-               const val = data.values[idx];
-               if(val === 0) return null;
-               const baseP = new THREE.Vector3(...pos);
-               const diagP = baseP.clone().add(normal.clone().multiplyScalar(scaledValues[idx] * 1.1));
-               return (
-                 <Text key={`txt-${idx}`} position={diagP} color={color} fontSize={0.3} outlineWidth={0.02} outlineColor="#fff">
-                   {Math.abs(val).toFixed(1)}
-                 </Text>
-               );
-            }
-            return null;
-          })}
-        </group>
-      );
-    };
-
-    const StructureScene = ({ model, activeDiagram, onElementClick }) => {
-      const { nodes, elements, supports, loads, diagrams } = model;
-      const nodeMap = new Map(nodes.map(n => [n.id, n]));
-
-      return (
-        <group position={[0, 0, 0]}>
-          {elements.map(el => {
-            const n1 = nodeMap.get(el.n1);
-            const n2 = nodeMap.get(el.n2);
-            if (!n1 || !n2) return null;
-
-            const p1 = new THREE.Vector3(n1.x, n1.y, n1.z);
-            const p2 = new THREE.Vector3(n2.x, n2.y, n2.z);
-            const distance = p1.distanceTo(p2);
-            const center = p1.clone().lerp(p2, 0.5);
-
-            const direction = p2.clone().sub(p1).normalize();
-            const quaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
-
-            return (
-              <group key={el.id}>
-                <mesh position={center} quaternion={quaternion} onClick={(e) => { e.stopPropagation(); onElementClick(`el-${el.id}`); }}>
-                  <cylinderGeometry args={[0.1, 0.1, distance, 12]} />
-                  <meshStandardMaterial color={COLORS.beam} metalness={0.5} roughness={0.2} />
-                </mesh>
-
-                {activeDiagram !== 'none' && diagrams[activeDiagram] && diagrams[activeDiagram][el.id] && (
-                  <Diagram3D data={diagrams[activeDiagram][el.id]} type={activeDiagram} />
-                )}
-              </group>
-            );
-          })}
-
-          {nodes.map(n => (
-            <mesh key={n.id} position={[n.x, n.y, n.z]}>
-              <sphereGeometry args={[0.15, 16, 16]} />
-              <meshStandardMaterial color={COLORS.node} />
-            </mesh>
-          ))}
-
-          {supports.map((sup, i) => {
-            const n = nodeMap.get(sup.nodeId);
-            if (!n) return null;
-            let angle = sup.angle || 0;
-            if (sup.type === 'fixed' && n.x > 0 && model.type === 'beam') angle = 180;
-
-            return (
-              <SupportMesh key={`sup-${i}`} id={n.id} type={sup.type} position={[n.x, n.y, n.z]} angle={angle} onSelect={onElementClick} />
-            );
-          })}
-
-          {loads.map(load => {
-            const n = nodeMap.get(load.nodeId || '');
-            if (!n) return null;
-            return (
-              <LoadArrow key={load.id} id={load.id} start={[n.x, n.y, n.z]} dir={load.dir} label={load.label} onSelect={onElementClick} />
-            );
-          })}
-        </group>
-      );
-    };
-
-    function App() {
-      const [currentView, setCurrentView] = useState('home');
-      const [activeModelId, setActiveModelId] = useState('beam-simply-supported');
-      const [activeDiagram, setActiveDiagram] = useState('none');
-      const [selectedElementId, setSelectedElementId] = useState(null);
-      const [learningStepIndex, setLearningStepIndex] = useState(0);
-
-      const activeModel = MODELS[activeModelId];
-
-      useEffect(() => {
-        setActiveDiagram('none');
-        setSelectedElementId(null);
-        setLearningStepIndex(0);
-      }, [activeModelId]);
-
-      const handleElementClick = (id) => setSelectedElementId(id);
-
-      const nextStep = () => {
-        if (learningStepIndex < activeModel.learningSteps.length - 1) {
-          setLearningStepIndex(prev => prev + 1);
-          const step = activeModel.learningSteps[learningStepIndex + 1];
-          if (step.targetId) setSelectedElementId(step.targetId);
-          else setSelectedElementId(null);
-        }
-      };
-
-      const prevStep = () => {
-        if (learningStepIndex > 0) {
-          setLearningStepIndex(prev => prev - 1);
-          const step = activeModel.learningSteps[learningStepIndex - 1];
-          if (step.targetId) setSelectedElementId(step.targetId);
-          else setSelectedElementId(null);
-        }
-      };
-
-      const HomeView = () => (
-        <div className="flex-1 p-10 overflow-y-auto bg-slate-900 text-slate-200">
-          <div className="max-w-4xl mx-auto text-center mt-10">
-            <Rotate3D className="mx-auto text-blue-500 mb-6" size={80} />
-            <h1 className="text-5xl font-extrabold text-white mb-6">Estrutural Lab 3D</h1>
-            <p className="text-xl text-slate-300 mb-12 max-w-2xl mx-auto leading-relaxed">
-              Laboratório virtual interativo para estudantes de Engenharia Civil. Visualize vigas e pórticos, explore os tipos de apoios e entenda a fundo os diagramas de esforços internos.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 text-left">
-              <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 hover:border-blue-500 transition-colors">
-                <Layers className="text-blue-400 mb-3" size={32} />
-                <h3 className="text-lg font-bold mb-2">Modelos 3D</h3>
-                <p className="text-sm text-slate-400">Interaja com estruturas tridimensionais, gire, aproxime e investigue os nós e apoios.</p>
-              </div>
-              <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 hover:border-emerald-500 transition-colors">
-                <Activity className="text-emerald-400 mb-3" size={32} />
-                <h3 className="text-lg font-bold mb-2">Diagramas N, V, M</h3>
-                <p className="text-sm text-slate-400">Sobreponha diagramas de esforços normais, cortantes e momentos fletores direto na geometria.</p>
-              </div>
-              <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 hover:border-amber-500 transition-colors">
-                <GraduationCap className="text-amber-400 mb-3" size={32} />
-                <h3 className="text-lg font-bold mb-2">Ensino Guiado</h3>
-                <p className="text-sm text-slate-400">Aprenda passo a passo o comportamento estrutural com exemplos clássicos de mecânica.</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setCurrentView('lab')}
-              className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-lg transition-all transform hover:scale-105 shadow-lg shadow-blue-900/50 flex items-center mx-auto"
-            >
-              Entrar no Laboratório <ChevronRight className="ml-2" />
-            </button>
-          </div>
-        </div>
-      );
-
-      const QuizView = () => {
-        const [qIndex, setQIndex] = useState(0);
-        const [selectedA, setSelectedA] = useState(null);
-        const [showExplanation, setShowExplanation] = useState(false);
-
-        const questions = [
-          {
-            q: "Qual apoio impede translações no plano (X e Y), mas permite rotação (momento)?",
-            opts: ["Apoio Móvel (1º Gênero)", "Apoio Articulado (2º Gênero)", "Engaste (3º Gênero)"],
-            ans: 1,
-            exp: "O apoio articulado fornece reações em X e Y, mas como não resiste a momentos, ele permite que a barra rotacione livremente na sua extremidade."
-          },
-          {
-            q: "Na convenção estrutural clássica brasileira, o diagrama de momento fletor POSITIVO é desenhado:",
-            opts: ["Do lado comprimido da barra (geralmente acima)", "Do lado tracionado da barra (geralmente abaixo)", "Independe da tração, sempre acima"],
-            ans: 1,
-            exp: "Para vigas horizontais com cargas gravitacionais, a fibra inferior traciona (momento positivo) e o diagrama é desenhado para baixo, acompanhando o lado da fibra tracionada."
-          },
-          {
-            q: "Em uma viga biapoiada sujeita a uma carga pontual no centro, o diagrama de Esforço Cortante apresenta:",
-            opts: ["Uma parábola contínua", "Um valor constante que muda de sinal sob a carga", "Zero em toda a extensão"],
-            ans: 1,
-            exp: "O cortante (V) representa a derivada do momento. Sendo o momento linear entre apoios e a carga, o cortante é constante. Ao passar pela carga pontual, há um salto (descontinuidade) no diagrama, invertendo o sinal."
-          }
-        ];
-
-        const currentQ = questions[qIndex];
-
-        return (
-          <div className="flex-1 p-10 overflow-y-auto bg-slate-900 text-slate-200">
-            <h2 className="text-3xl font-bold mb-8 flex items-center"><CheckCircle2 className="mr-3 text-emerald-400"/> Exercícios de Fixação</h2>
-            <div className="bg-slate-800 p-8 rounded-2xl border border-slate-700 max-w-2xl mx-auto shadow-xl">
-              <div className="mb-4 text-sm text-blue-400 font-semibold">Questão {qIndex + 1} de {questions.length}</div>
-              <h3 className="text-xl font-medium mb-6 leading-relaxed">{currentQ.q}</h3>
-              <div className="space-y-3">
-                {currentQ.opts.map((opt, i) => (
-                  <button
-                    key={i}
-                    onClick={() => !showExplanation && setSelectedA(i)}
-                    className={`w-full text-left p-4 rounded-xl border transition-all ${
-                      showExplanation
-                        ? i === currentQ.ans
-                          ? 'bg-emerald-900/50 border-emerald-500 text-emerald-100'
-                          : i === selectedA
-                            ? 'bg-red-900/50 border-red-500 text-red-100'
-                            : 'bg-slate-700/30 border-slate-600 opacity-50'
-                        : selectedA === i
-                          ? 'bg-blue-600/30 border-blue-500'
-                          : 'bg-slate-700/50 border-slate-600 hover:bg-slate-600'
-                    }`}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-              {!showExplanation && selectedA !== null && (
-                <button
-                  onClick={() => setShowExplanation(true)}
-                  className="mt-6 w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-colors"
-                >
-                  Confirmar Resposta
-                </button>
-              )}
-              {showExplanation && (
-                <div className={`mt-6 p-5 rounded-xl border ${selectedA === currentQ.ans ? 'bg-emerald-900/30 border-emerald-500/50' : 'bg-red-900/30 border-red-500/50'}`}>
-                  <h4 className={`font-bold mb-2 ${selectedA === currentQ.ans ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {selectedA === currentQ.ans ? 'Correto!' : 'Incorreto.'}
-                  </h4>
-                  <p className="text-slate-300">{currentQ.exp}</p>
-                  <button
-                    onClick={() => {
-                      if (qIndex < questions.length - 1) {
-                        setQIndex(qIndex + 1);
-                        setSelectedA(null);
-                        setShowExplanation(false);
-                      } else {
-                        alert("Você concluiu os exercícios!");
-                        setCurrentView('home');
-                      }
-                    }}
-                    className="mt-4 px-6 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-medium transition-colors float-right"
-                  >
-                    {qIndex < questions.length - 1 ? 'Próxima Questão' : 'Finalizar'}
-                  </button>
-                  <div className="clear-both"></div>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      };
-
-      const GlossaryView = () => (
-        <div className="flex-1 p-10 overflow-y-auto bg-slate-900 text-slate-200">
-          <h2 className="text-3xl font-bold mb-8 flex items-center"><BookOpen className="mr-3 text-amber-400"/> Glossário Estrutural</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-            <div className="bg-slate-800 p-6 rounded-xl border border-slate-700">
-              <h3 className="text-xl font-bold text-blue-400 mb-2">Esforço Normal (N)</h3>
-              <p className="text-slate-300">Força interna que atua paralelamente ao eixo da barra. Pode causar Tração (alongamento) ou Compressão (encurtamento).</p>
-            </div>
-            <div className="bg-slate-800 p-6 rounded-xl border border-slate-700">
-              <h3 className="text-xl font-bold text-emerald-400 mb-2">Esforço Cortante (V)</h3>
-              <p className="text-slate-300">Força interna perpendicular ao eixo da barra. Representa a tendência de uma seção da viga "escorregar" sobre a outra adjacente.</p>
-            </div>
-            <div className="bg-slate-800 p-6 rounded-xl border border-slate-700">
-              <h3 className="text-xl font-bold text-amber-400 mb-2">Momento Fletor (M)</h3>
-              <p className="text-slate-300">Esforço interno que causa a curvatura da barra. É gerado pela aplicação de forças perpendiculares a uma certa distância.</p>
-            </div>
-            <div className="bg-slate-800 p-6 rounded-xl border border-slate-700">
-              <h3 className="text-xl font-bold text-slate-100 mb-2">Estrutura Isostática</h3>
-              <p className="text-slate-300">Estrutura onde o número de reações de apoio é igual ao número de equações de equilíbrio estático (geralmente 3 no plano).</p>
-            </div>
-          </div>
-        </div>
-      );
-
-      return (
-        <div className="flex h-screen w-full bg-slate-950 font-sans overflow-hidden">
-          {/* Sidebar - Navegação Secundária */}
-          <div className="w-64 flex-shrink-0 bg-slate-900 border-r border-slate-800 flex flex-col shadow-xl z-20 relative">
-            <div className="p-6 border-b border-slate-800 flex items-center">
-              <Rotate3D className="text-blue-500 mr-3" size={28} />
-              <h1 className="text-xl font-bold text-slate-100 tracking-tight">Lab. 3D</h1>
-            </div>
-            <nav className="flex-1 p-4 space-y-2">
-              <button onClick={() => setCurrentView('home')} className={`w-full flex items-center p-3 rounded-lg transition-colors ${currentView === 'home' ? 'bg-blue-600/20 text-blue-400 font-semibold' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`}>
-                 <MousePointer2 className="mr-3" size={18} /> Início
-              </button>
-              <button onClick={() => setCurrentView('lab')} className={`w-full flex items-center p-3 rounded-lg transition-colors ${currentView === 'lab' ? 'bg-blue-600/20 text-blue-400 font-semibold' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`}>
-                 <BoxSelect className="mr-3" size={18} /> Laboratório
-              </button>
-              <button onClick={() => setCurrentView('quiz')} className={`w-full flex items-center p-3 rounded-lg transition-colors ${currentView === 'quiz' ? 'bg-blue-600/20 text-blue-400 font-semibold' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`}>
-                 <CheckCircle2 className="mr-3" size={18} /> Exercícios
-              </button>
-              <button onClick={() => setCurrentView('glossary')} className={`w-full flex items-center p-3 rounded-lg transition-colors ${currentView === 'glossary' ? 'bg-blue-600/20 text-blue-400 font-semibold' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`}>
-                 <BookOpen className="mr-3" size={18} /> Glossário
-              </button>
-            </nav>
-            <div className="p-4 text-xs text-slate-500 border-t border-slate-800 text-center">
-              Versão Didática • Eng. Civil
-            </div>
-          </div>
-
-          {/* Área de Conteúdo */}
-          <div className="flex-1 flex relative">
-            {currentView === 'home' && <HomeView />}
-            {currentView === 'quiz' && <QuizView />}
-            {currentView === 'glossary' && <GlossaryView />}
-
-            {currentView === 'lab' && (
-              <>
-                {/* Menu Superior: Seleção de Modelo */}
-                <div className="absolute top-4 left-4 z-10 flex space-x-2 bg-slate-900/80 backdrop-blur-sm p-2 rounded-xl border border-slate-700 shadow-lg">
-                   {Object.values(MODELS).map(m => (
-                     <button
-                       key={m.id}
-                       onClick={() => setActiveModelId(m.id)}
-                       className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeModelId === m.id ? 'bg-blue-600 text-white' : 'bg-transparent text-slate-300 hover:bg-slate-700'}`}
-                     >
-                       {m.title}
-                     </button>
-                   ))}
-                </div>
-
-                {/* Canvas 3D */}
-                <div className="flex-1 relative bg-gradient-to-b from-slate-900 to-slate-950">
-                  <Canvas camera={{ position: [5, 4, 10], fov: 45 }} className="w-full h-full">
-                    <color attach="background" args={['#0f172a']} />
-                    <ambientLight intensity={0.6} />
-                    <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
-                    <Grid infiniteGrid fadeDistance={40} sectionColor="#334155" cellColor="#1e293b" position={[0, -5, 0]} />
-                    <StructureScene
-                      model={activeModel}
-                      activeDiagram={activeDiagram}
-                      onElementClick={handleElementClick}
-                    />
-                    <OrbitControls makeDefault enablePan={true} enableZoom={true} />
-                    <ContactShadows position={[0, -4.9, 0]} opacity={0.4} scale={20} blur={2} far={10} />
-                  </Canvas>
-                  <div className="absolute bottom-6 left-6 text-slate-400 text-sm flex items-center bg-slate-900/80 p-3 rounded-lg backdrop-blur-sm border border-slate-800">
-                    <MousePointer2 size={16} className="mr-2" />
-                    Clique e arraste para girar a visualização 3D. Role para zoom.
-                  </div>
-                </div>
-
-                {/* Painel Direito */}
-                <div className="w-80 bg-slate-900 border-l border-slate-800 flex flex-col shadow-2xl z-20 text-slate-200">
-                  <div className="p-6 border-b border-slate-800 bg-slate-800/30">
-                    <h2 className="text-xl font-bold mb-1 text-slate-100">{activeModel.title}</h2>
-                    <p className="text-xs text-slate-400">{activeModel.description}</p>
-                  </div>
-
-                  <div className="p-6 border-b border-slate-800">
-                    <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center">
-                      <Activity size={16} className="mr-2" /> Diagramas
-                    </h3>
-                    <div className="grid grid-cols-4 gap-2">
-                      <button
-                        onClick={() => setActiveDiagram('none')}
-                        className={`p-2 text-xs font-bold rounded-lg border transition-all ${activeDiagram === 'none' ? 'bg-slate-700 border-slate-500 text-white shadow-inner' : 'border-slate-700 text-slate-400 hover:bg-slate-800'}`}
-                      >
-                        Oculto
-                      </button>
-                      <button
-                        onClick={() => setActiveDiagram('N')}
-                        className={`p-2 text-xs font-bold rounded-lg border transition-all flex flex-col items-center justify-center ${activeDiagram === 'N' ? 'bg-blue-900/50 border-blue-500 text-blue-300 shadow-inner' : 'border-slate-700 text-slate-400 hover:bg-slate-800'}`}
-                      >
-                        <span>[ N ]</span>
-                        <span className="text-[10px] font-normal mt-1 opacity-70">Normal</span>
-                      </button>
-                      <button
-                        onClick={() => setActiveDiagram('V')}
-                        className={`p-2 text-xs font-bold rounded-lg border transition-all flex flex-col items-center justify-center ${activeDiagram === 'V' ? 'bg-emerald-900/50 border-emerald-500 text-emerald-300 shadow-inner' : 'border-slate-700 text-slate-400 hover:bg-slate-800'}`}
-                      >
-                        <span>[ V ]</span>
-                        <span className="text-[10px] font-normal mt-1 opacity-70">Cortante</span>
-                      </button>
-                      <button
-                        onClick={() => setActiveDiagram('M')}
-                        className={`p-2 text-xs font-bold rounded-lg border transition-all flex flex-col items-center justify-center ${activeDiagram === 'M' ? 'bg-amber-900/50 border-amber-500 text-amber-300 shadow-inner' : 'border-slate-700 text-slate-400 hover:bg-slate-800'}`}
-                      >
-                        <span>[ M ]</span>
-                        <span className="text-[10px] font-normal mt-1 opacity-70">Fletor</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex-1 overflow-y-auto p-6 bg-slate-900/50">
-                    {selectedElementId && selectedElementId.startsWith('sup-') ? (
-                      <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
-                        <h3 className="font-bold text-lg mb-2 text-slate-100">
-                          {INFO_DIC[activeModel.supports.find(s => s.nodeId === selectedElementId.split('-')[1])?.type]?.name || 'Apoio'}
-                        </h3>
-                        <p className="text-sm text-slate-400 mb-4">
-                          {INFO_DIC[activeModel.supports.find(s => s.nodeId === selectedElementId.split('-')[1])?.type]?.desc || ''}
-                        </p>
-                        <div className="space-y-2 text-xs">
-                          <div className="flex justify-between items-center bg-slate-900 p-2 rounded">
-                            <span>Reação Horizontal (X)</span>
-                            <span className={`font-bold ${INFO_DIC[activeModel.supports.find(s => s.nodeId === selectedElementId.split('-')[1])?.type]?.rx === 'Sim' ? 'text-emerald-400' : 'text-red-400'}`}>
-                              {INFO_DIC[activeModel.supports.find(s => s.nodeId === selectedElementId.split('-')[1])?.type]?.rx}
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-center bg-slate-900 p-2 rounded">
-                            <span>Reação Vertical (Y)</span>
-                            <span className={`font-bold ${INFO_DIC[activeModel.supports.find(s => s.nodeId === selectedElementId.split('-')[1])?.type]?.ry === 'Sim' ? 'text-emerald-400' : 'text-red-400'}`}>
-                              {INFO_DIC[activeModel.supports.find(s => s.nodeId === selectedElementId.split('-')[1])?.type]?.ry}
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-center bg-slate-900 p-2 rounded">
-                            <span>Reação Momento (M)</span>
-                            <span className={`font-bold ${INFO_DIC[activeModel.supports.find(s => s.nodeId === selectedElementId.split('-')[1])?.type]?.rm === 'Sim' ? 'text-emerald-400' : 'text-red-400'}`}>
-                              {INFO_DIC[activeModel.supports.find(s => s.nodeId === selectedElementId.split('-')[1])?.type]?.rm}
-                            </span>
-                          </div>
-                        </div>
-                        <button onClick={() => setSelectedElementId(null)} className="mt-4 text-xs text-blue-400 hover:text-blue-300 w-full text-center">Voltar ao tutorial</button>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col h-full">
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center">
-                            <Play size={16} className="mr-2" /> Passo a Passo
-                          </h3>
-                          <div className="text-xs font-bold text-slate-500 bg-slate-800 px-2 py-1 rounded">
-                            {learningStepIndex + 1} / {activeModel.learningSteps.length}
-                          </div>
-                        </div>
-                        <div className="bg-blue-900/20 border border-blue-900/50 p-5 rounded-xl flex-1 relative">
-                           <h4 className="text-blue-400 font-bold mb-3 text-lg">
-                             {activeModel.learningSteps[learningStepIndex].title}
-                           </h4>
-                           <p className="text-sm text-slate-300 leading-relaxed">
-                             {activeModel.learningSteps[learningStepIndex].text}
-                           </p>
-                        </div>
-                        <div className="flex justify-between mt-4">
-                          <button
-                            onClick={prevStep}
-                            disabled={learningStepIndex === 0}
-                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${learningStepIndex === 0 ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-slate-700 text-slate-200 hover:bg-slate-600'}`}
-                          >
-                            Anterior
-                          </button>
-                          <button
-                            onClick={nextStep}
-                            disabled={learningStepIndex === activeModel.learningSteps.length - 1}
-                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${learningStepIndex === activeModel.learningSteps.length - 1 ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-900/50'}`}
-                          >
-                            Próximo
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-4 border-t border-slate-800 bg-slate-950 text-xs text-slate-500 text-center">
-                    <Info size={14} className="inline mr-1" /> Valores apenas para fins didáticos.
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    // Remove a tela de carregamento e renderiza o app
-    const rootElement = document.getElementById('root');
-    rootElement.innerHTML = '';
-    const root = createRoot(rootElement);
-    root.render(<App />);
-  </script>
 </body>
 </html>
