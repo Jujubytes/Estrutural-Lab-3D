@@ -133,53 +133,6 @@ estrutural-lab-3d/
 
 ---
 
-## 🚀 Publicação no GitHub Pages
-
-### 1. Criar repositório
-
-1. Acesse [github.com](https://github.com) → **New repository**
-2. Nome (ex: `estrutural-lab-3d`), **Public**, sem README
-3. **Create repository**
-
-### 2. Enviar arquivos
-
-**Via terminal (Git):**
-```bash
-git init
-git add .
-git commit -m "Estrutural Lab 3D v2.0 MEF"
-git branch -M main
-git remote add origin https://github.com/<seu-usuario>/estrutural-lab-3d.git
-git push -u origin main
-```
-
-**Via upload no GitHub:** Arraste toda a pasta para a interface web.
-
-### 3. Ativar GitHub Pages
-
-**Settings → Pages → Source: Deploy from a branch → main / (root) → Save**
-
-Após ~2 minutos: `https://<seu-usuario>.github.io/estrutural-lab-3d/`
-
----
-
-## 💻 Execução Local
-
-```bash
-# Python (recomendado)
-python -m http.server 8000
-
-# Acesse no navegador:
-http://localhost:8000/
-
-# Testes analíticos:
-http://localhost:8000/tests/
-```
-
-> ⚠️ **Não** abra o `index.html` diretamente como arquivo (protocolo `file://`). ES Modules requerem HTTP.
-
----
-
 ## 🧪 Testes de Validação (25 casos, 100% aprovados)
 
 | Caso | Grandeza | Fórmula Analítica | Tolerância |
